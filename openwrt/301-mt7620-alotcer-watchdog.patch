@@ -1,0 +1,50 @@
+--- a/arch/mips/ralink/mt7620.c
++++ b/arch/mips/ralink/mt7620.c
+@@ -11,6 +11,8 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/bug.h>
++#include <linux/timer.h>
++#include <linux/of.h>
+ 
+ #include <asm/mipsregs.h>
+ #include <asm/mach-ralink/ralink_regs.h>
+@@ -395,4 +397,38 @@
+ 		(pmu0 & PMU_SW_SET) ? ("sw") : ("hw"));
+ 	pr_info("Digital PMU set to %s control\n",
+ 		(pmu1 & DIG_SW_SEL) ? ("sw") : ("hw"));
++
++	if (ralink_soc == MT762X_SOC_MT7620A) {
++		/* Mux MDIO pin group to GPIO */
++		__raw_writel(__raw_readl(sysc + 0x60) | (3 << 7), sysc + 0x60);
++		/* Set GPIO 23 as output (DIR register at 0x600) */
++		__raw_writel(__raw_readl(sysc + 0x600) | (1 << 23), sysc + 0x600);
++		/* Initial toggle of GPIO 23 (DATA register at 0x620) */
++		__raw_writel(__raw_readl(sysc + 0x620) ^ (1 << 23), sysc + 0x620);
++	}
+ }
++
++static struct timer_list alotcer_wdt_timer;
++
++static void alotcer_wdt_fn(struct timer_list *t)
++{
++	void __iomem *sysc = (void __iomem *) KSEG1ADDR(MT7620_SYSC_BASE);
++	u32 val = __raw_readl(sysc + 0x620);
++
++	val ^= (1 << 23);
++	__raw_writel(val, sysc + 0x620);
++	mod_timer(&alotcer_wdt_timer, jiffies + HZ / 5);
++}
++
++static int __init alotcer_wdt_init(void)
++{
++	if (!of_machine_is_compatible("alotcer,s9922l"))
++		return 0;
++
++	pr_info("Alotcer: external hardware watchdog kicker started (GPIO 23)\n");
++	timer_setup(&alotcer_wdt_timer, alotcer_wdt_fn, 0);
++	mod_timer(&alotcer_wdt_timer, jiffies + HZ / 5);
++	return 0;
++}
++arch_initcall(alotcer_wdt_init);
++

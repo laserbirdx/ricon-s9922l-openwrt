@@ -1,0 +1,58 @@
+diff --git a/target/linux/ramips/image/mt7620.mk b/target/linux/ramips/image/mt7620.mk
+index f7ef1c4832..f50fdb8306 100644
+--- a/target/linux/ramips/image/mt7620.mk
++++ b/target/linux/ramips/image/mt7620.mk
+@@ -1558,3 +1558,13 @@ define Device/zyxel_keenetic-viva
+   SUPPORTED_DEVICES += kng_rc
+ endef
+ TARGET_DEVICES += zyxel_keenetic-viva
++
++define Device/alotcer_s9922l
++  SOC := mt7620a
++  IMAGE_SIZE := 16064k
++  DEVICE_VENDOR := Alotcer
++  DEVICE_MODEL := S9922L
++  DEVICE_PACKAGES := kmod-usb2 kmod-usb-ohci kmod-usb-net-qmi-wwan kmod-usb-serial-option uqmi luci
++  SUPPORTED_DEVICES += alotcer,s9922l
++endef
++TARGET_DEVICES += alotcer_s9922l
+diff --git a/target/linux/ramips/mt7620/base-files/etc/board.d/02_network b/target/linux/ramips/mt7620/base-files/etc/board.d/02_network
+index cbfb8a1d86..24d83a0866 100644
+--- a/target/linux/ramips/mt7620/base-files/etc/board.d/02_network
++++ b/target/linux/ramips/mt7620/base-files/etc/board.d/02_network
+@@ -149,6 +149,10 @@ ramips_setup_interfaces()
+ 		ucidef_add_switch "switch0" \
+ 			"1:lan:3" "2:lan:2" "3:lan:1" "4:wan" "6@eth0"
+ 		;;
++	alotcer,s9922l)
++		ucidef_add_switch "switch0" \
++			"0:lan" "1:lan" "2:lan" "3:lan" "4:lan" "6@eth0"
++		;;
+ 	edimax,br-6478ac-v2|\
+ 	lb-link,bl-w1200|\
+ 	tplink,archer-c2-v1)
+@@ -339,6 +343,11 @@ ramips_setup_macs()
+ 		lan_mac=$(mtd_get_mac_ascii u-boot-env LAN_MAC_ADDR)
+ 		wan_mac=$(mtd_get_mac_ascii u-boot-env WAN_MAC_ADDR)
+ 		;;
++	alotcer,s9922l)
++		lan_mac=$(mtd_get_mac_binary factory 0x1028)
++		wan_mac=$(macaddr_add "$lan_mac" 1)
++		label_mac=$lan_mac
++		;;
+ 	edimax,br-6478ac-v2)
+ 		wan_mac=$(macaddr_add "$(mtd_get_mac_binary factory 0x4)" 2)
+ 		;;
+diff --git a/target/linux/ramips/mt7620/config-5.15 b/target/linux/ramips/mt7620/config-5.15
+index fdca30fecb..7d86fe7c7e 100644
+--- a/target/linux/ramips/mt7620/config-5.15
++++ b/target/linux/ramips/mt7620/config-5.15
+@@ -73,7 +73,7 @@ CONFIG_GPIO_CDEV=y
+ # CONFIG_GPIO_MT7621 is not set
+ CONFIG_GPIO_RALINK=y
+ CONFIG_GPIO_WATCHDOG=y
+-# CONFIG_GPIO_WATCHDOG_ARCH_INITCALL is not set
++CONFIG_GPIO_WATCHDOG_ARCH_INITCALL=y
+ CONFIG_HANDLE_DOMAIN_IRQ=y
+ CONFIG_HARDWARE_WATCHPOINTS=y
+ CONFIG_HAS_DMA=y

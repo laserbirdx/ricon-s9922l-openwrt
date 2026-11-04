@@ -1,0 +1,10 @@
+*
+!.gitignore
+!README.md
+!LICENSE
+!mt7620a_alotcer_s9922l.dts
+!openwrt/
+!openwrt/ramips-mt7620.diff
+!openwrt/301-mt7620-alotcer-watchdog.patch
+!assets/
+!assets/banner.webp
